@@ -58,7 +58,7 @@ public class SafeQueueTest {
         assertEquals(ans, queue.take(10));
     }
 
-    @Test(timeout = 30)
+    @Test(timeout = 1000)
     public void testTimeouts() {
         List list = new ArrayList<>();
 

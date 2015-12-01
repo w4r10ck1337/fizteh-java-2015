@@ -1,12 +1,9 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import static jdk.nashorn.internal.objects.NativeArray.forEach;
 
 public class SafeQueue {
     private int maxSize;
@@ -115,7 +112,7 @@ public class SafeQueue {
         }
     }
 
-    public List take (int n, long timeout) {
+    public List take(int n, long timeout) {
         Taker t = new Taker(n);
         t.start();
 

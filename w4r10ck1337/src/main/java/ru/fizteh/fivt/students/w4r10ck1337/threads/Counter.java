@@ -1,13 +1,13 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
 public class Counter {
-    static volatile int currentId;
+    private static volatile int currentId;
     private static class CountThread extends Thread {
         private int id, nextId;
 
         @Override
         public void run() {
-            while(true) {
+            while (true) {
                 while (id != currentId) {
                     Thread.yield();
                 }

@@ -1,13 +1,12 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
-import java.io.InputStream;
 import java.util.Random;
 
 public class Call {
     private static class CountThread extends Thread {
         private int id;
         private boolean result;
-        Random rand = new Random();
+        private Random rand = new Random();
 
         public boolean getResult() {
             return result;
@@ -43,7 +42,7 @@ public class Call {
         CountThread[] threads = new CountThread[n];
 
         boolean success = true;
-        while(success) {
+        while (success) {
             System.out.println("Are you ready?");
             for (int i = 0; i < n; i++) {
                 threads[i] = new CountThread(i);

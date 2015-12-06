@@ -8,12 +8,13 @@ import org.junit.runners.JUnit4;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 
 @RunWith(JUnit4.class)
 public class SafeQueueTest {
-    SafeQueue queue;
+    SafeQueue<Integer> queue;
 
     @Before
     public void setUp() {
@@ -22,25 +23,21 @@ public class SafeQueueTest {
 
     @Test
     public void testSimpleQueueSingleThread() {
-        List list = new ArrayList<>();
-        List ans = null;
+        List list = new ArrayList();
 
-        for (int i = 0; i < 10; i++) {
-            list.add(i);
-        }
+        IntStream.range(0, 10).forEach(t -> list.add(t));
         queue.offer(list);
-        ans = queue.take(10);
-        assertEquals(list, ans);
+        assertEquals(list, queue.take(10));
 
         queue.offer(list);
-        ans = queue.take(10);
-        assertEquals(list, ans);
+        assertEquals(list, queue.take(10));
     }
 
     @Test
     public void testSimpleQueueMultiThread() {
-        List list = new ArrayList<>();
-        List ans = new ArrayList<>();
+        List list = new ArrayList();
+        List ans = new ArrayList();
+
         for (int i = 0; i < 10; i++) {
             list.add(i);
             ans.add(i % 5);
@@ -60,12 +57,19 @@ public class SafeQueueTest {
 
     @Test(timeout = 1000)
     public void testTimeouts() {
-        List list = new ArrayList<>();
+        List list = new ArrayList();
 
-        for (int i = 0; i < 15; i++) {
-            list.add(i);
-        }
+        IntStream.range(0, 15).forEach(t -> list.add(t));
         queue.take(10, 10);
         queue.offer(list, 10);
+    }
+
+    @Test(timeout = 1000)
+    public void testTimeoutsCorrect() {
+        List list = new ArrayList();
+
+        IntStream.range(0, 10).forEach(t -> list.add(t));
+        queue.offer(list, 100);
+        assertEquals(list, queue.take(10, 100));
     }
 }

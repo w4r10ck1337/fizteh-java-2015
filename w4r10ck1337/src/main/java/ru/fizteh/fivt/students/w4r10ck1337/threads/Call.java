@@ -1,29 +1,52 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 
 public class Call {
+    private static CyclicBarrier askBarrier, waitForAnswerBarrier, checkSuccessBarrier;
+    private static volatile boolean success = false;
+
     private static class CountThread extends Thread {
-        private int id;
         private boolean result;
         private Random rand = new Random();
 
-        public boolean getResult() {
-            return result;
-        }
-
         @Override
         public void run() {
-            result = rand.nextInt(10) != 0;
-            if (result) {
-                System.out.println("Yes");
-            } else {
-                System.out.println("No");
+            while (true) {
+                try {
+                    askBarrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+                result = rand.nextInt(10) != 0;
+                if (result) {
+                    System.out.println("Yes");
+                } else {
+                    System.out.println("No");
+                }
+                success &= result;
+                try {
+                    waitForAnswerBarrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+                if (success) {
+                    return;
+                }
+                try {
+                    checkSuccessBarrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-
-        CountThread(int id) {
-            this.id = id;
         }
     }
 
@@ -40,22 +63,50 @@ public class Call {
         }
 
         CountThread[] threads = new CountThread[n];
+        askBarrier = new CyclicBarrier(n + 1);
+        waitForAnswerBarrier = new CyclicBarrier(n + 1);
+        checkSuccessBarrier = new CyclicBarrier(n + 1);
 
-        boolean success = true;
-        while (success) {
+        for (int i = 0; i < n; i++) {
+            threads[i] = new CountThread();
+            threads[i].start();
+        }
+
+        while (!success) {
             System.out.println("Are you ready?");
-            for (int i = 0; i < n; i++) {
-                threads[i] = new CountThread(i);
-                threads[i].start();
+            success = true;
+            try {
+                askBarrier.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (BrokenBarrierException e) {
+                e.printStackTrace();
             }
-            for (int i = 0; i < n; i++) {
-                try {
-                    threads[i].join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    return;
-                }
-                success &= threads[i].getResult();
+            askBarrier.reset();
+            try {
+                waitForAnswerBarrier.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (BrokenBarrierException e) {
+                e.printStackTrace();
+            }
+            waitForAnswerBarrier.reset();
+            if (success) {
+                break;
+            }
+            try {
+                checkSuccessBarrier.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (BrokenBarrierException e) {
+                e.printStackTrace();
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            try {
+                threads[i].join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }

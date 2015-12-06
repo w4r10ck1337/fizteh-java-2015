@@ -1,28 +1,29 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class SafeQueue {
+public class SafeQueue<T> {
     private int maxSize;
-    private Queue queue;
+    private Queue<T> queue;
     private Lock queueLock = new ReentrantLock();
+    private Lock stateChanged = new ReentrantLock();
+    private Condition popWait = stateChanged.newCondition();
+    private Condition pushWait = stateChanged.newCondition();
+    private ExecutorService executor = Executors.newCachedThreadPool();
 
-    private Lock lock = new ReentrantLock();
-    private Condition popWait = lock.newCondition();
-    private Condition pushWait = lock.newCondition();
-
-    public void offer(List e) {
-        lock.lock();
+    public void offer(List<T> e) {
+        stateChanged.lock();
         try {
             boolean added = false;
             while (!added) {
                 try {
                     queueLock.lock();
                     if (queue.size() + e.size() <= maxSize) {
-                        e.forEach(t -> queue.add(t));
+                        queue.addAll(e);
                         added = true;
                     }
                 } finally {
@@ -38,30 +39,23 @@ public class SafeQueue {
             }
         } finally {
             pushWait.signalAll();
-            lock.unlock();
+            stateChanged.unlock();
         }
     }
 
-    public void offer(List e, long timeout) {
-        Thread t = new Thread() {
-            public void run() {
-                offer(e);
-            }
-        };
-        t.start();
+    public void offer(List<T> e, long timeout) {
+        Future future = executor.submit(() -> offer(e));
         try {
-            t.join(timeout);
-            if (t.isAlive()) {
-                t.interrupt();
-            }
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
+            future.get(timeout, TimeUnit.MILLISECONDS);
+        } catch (Exception ex) {
             return;
+        } finally {
+            future.cancel(true);
         }
     }
 
-    List take(int n) {
-        lock.lock();
+    List<T> take(int n) {
+        stateChanged.lock();
         try {
             List ans = new ArrayList<>();
             while (ans.size() < n) {
@@ -89,48 +83,23 @@ public class SafeQueue {
             return ans;
         } finally {
             popWait.signalAll();
-            lock.unlock();
+            stateChanged.unlock();
         }
     }
 
-    private class Taker extends Thread {
-        private List ans;
-        private int n;
-
-        @Override
-        public void run() {
-            ans = take(n);
-        }
-
-        public List getAns() {
-            return ans;
-        }
-
-        Taker(int n) {
-            this.n = n;
-            ans = null;
-        }
-    }
-
-    public List take(int n, long timeout) {
-        Taker t = new Taker(n);
-        t.start();
-
+    public List<T> take(int n, long timeout) {
+        Future<List<T>> future = executor.submit(() -> take(n));
         try {
-            t.join(timeout);
-            if (t.isAlive()) {
-                t.interrupt();
-                return null;
-            }
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
+            return future.get(timeout, TimeUnit.MILLISECONDS);
+        } catch (Exception ex) {
             return null;
+        } finally {
+            future.cancel(true);
         }
-        return t.getAns();
     }
 
     SafeQueue(int maxSize) {
         this.maxSize = maxSize;
-        queue = new ArrayDeque<>();
+        queue = new ArrayDeque();
     }
 }

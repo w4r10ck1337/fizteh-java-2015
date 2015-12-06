@@ -2,17 +2,26 @@ package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
 public class Counter {
     private static volatile int currentId;
+    private static Object monitor = new Object();
+
     private static class CountThread extends Thread {
         private int id, nextId;
 
         @Override
         public void run() {
             while (true) {
-                while (id != currentId) {
-                    Thread.yield();
+                synchronized (monitor) {
+                    while (id != currentId) {
+                        try {
+                            monitor.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    System.out.println("Thread-" + String.valueOf(id + 1));
+                    currentId = nextId;
+                    monitor.notifyAll();
                 }
-                System.out.println("Thread-" + String.valueOf(id + 1));
-                currentId = nextId;
             }
         }
         CountThread(int id, int nextId) {
@@ -24,7 +33,7 @@ public class Counter {
     public static void main(String[] args) {
         int n = 0;
         try {
-            n = new Integer(args[0]);
+            n = Integer.valueOf(args[0]);
             if (n <= 0) {
                 throw new NumberFormatException("");
             }

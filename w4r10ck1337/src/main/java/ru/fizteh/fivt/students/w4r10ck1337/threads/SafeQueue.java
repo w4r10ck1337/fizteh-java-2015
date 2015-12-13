@@ -1,7 +1,5 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
-import com.sun.org.apache.bcel.internal.generic.LSTORE;
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;

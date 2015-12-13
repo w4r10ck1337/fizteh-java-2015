@@ -1,7 +1,7 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
 public class Counter {
-    private static volatile int currentId;
+    private static int currentId;
     private static Object monitor = new Object();
 
     private static class CountThread extends Thread {
@@ -31,7 +31,7 @@ public class Counter {
     }
 
     public static void main(String[] args) {
-        int n = 0;
+        int n;
         try {
             n = Integer.valueOf(args[0]);
             if (n <= 0) {

@@ -6,8 +6,7 @@ import java.util.concurrent.CyclicBarrier;
 
 public class Call {
     private static CyclicBarrier askBarrier, waitForAnswerBarrier, checkSuccessBarrier;
-    private static boolean success = false;
-    private static Object monitor = new Object();
+    private static volatile boolean success = false;
 
     private static class CountThread extends Thread {
         private boolean result;
@@ -29,9 +28,7 @@ public class Call {
                 } else {
                     System.out.println("No");
                 }
-                synchronized (monitor) {
-                    success &= result;
-                }
+                success &= result;
                 try {
                     waitForAnswerBarrier.await();
                 } catch (InterruptedException e) {
@@ -54,7 +51,7 @@ public class Call {
     }
 
     public static void main(String[] args) {
-        int n;
+        int n = 0;
         try {
             n = new Integer(args[0]);
             if (n <= 0) {

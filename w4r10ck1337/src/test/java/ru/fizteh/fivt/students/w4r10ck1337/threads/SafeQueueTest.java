@@ -55,17 +55,17 @@ public class SafeQueueTest {
         assertEquals(ans, queue.take(10));
     }
 
-    @Test(expected = InterruptedException.class)
-    public void testTimeouts() throws InterruptedException {
+    @Test(timeout = 1000)
+    public void testTimeouts() {
         List list = new ArrayList();
 
         IntStream.range(0, 15).forEach(t -> list.add(t));
-        queue.offer(list, 10);
+        queue.take(10, 10);
         queue.offer(list, 10);
     }
 
     @Test(timeout = 1000)
-    public void testTimeoutsCorrect() throws InterruptedException {
+    public void testTimeoutsCorrect() {
         List list = new ArrayList();
 
         IntStream.range(0, 10).forEach(t -> list.add(t));

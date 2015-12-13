@@ -1,7 +1,7 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
 public class Counter {
-    private static int currentId;
+    private static volatile int currentId;
     private static Object monitor = new Object();
 
     private static class CountThread extends Thread {

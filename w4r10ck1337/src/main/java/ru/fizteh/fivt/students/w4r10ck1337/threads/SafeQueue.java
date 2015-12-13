@@ -1,5 +1,7 @@
 package ru.fizteh.fivt.students.w4r10ck1337.threads;
 
+import com.sun.org.apache.bcel.internal.generic.LSTORE;
+
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
@@ -15,13 +17,34 @@ public class SafeQueue<T> {
     private Condition pushWait = stateChanged.newCondition();
     private ExecutorService executor = Executors.newCachedThreadPool();
 
-    public void offer(List<T> e) {
-        stateChanged.lock();
+    private long getTimeout(long timeLimit) throws InterruptedException {
+        long currTime = System.currentTimeMillis();
+        if (currTime > timeLimit) {
+            throw new InterruptedException("Timeout");
+        }
+        return timeLimit - currTime;
+    }
+
+    public void offer(List<T> e, long timeout, boolean needTimeout) throws InterruptedException {
+        long timeLimit = System.currentTimeMillis() + timeout;
+        if (needTimeout) {
+            if (!stateChanged.tryLock(getTimeout(timeLimit), TimeUnit.MILLISECONDS)) {
+                throw new InterruptedException("Timeout");
+            }
+        } else {
+            stateChanged.lock();
+        }
         try {
             boolean added = false;
             while (!added) {
                 try {
-                    queueLock.lock();
+                    if (needTimeout) {
+                        if (!queueLock.tryLock(getTimeout(timeLimit), TimeUnit.MILLISECONDS)) {
+                            throw new InterruptedException("Timeout");
+                        }
+                    } else {
+                        queueLock.lock();
+                    }
                     if (queue.size() + e.size() <= maxSize) {
                         queue.addAll(e);
                         added = true;
@@ -30,10 +53,12 @@ public class SafeQueue<T> {
                     queueLock.unlock();
                 }
                 if (!added) {
-                    try {
+                    if (needTimeout) {
+                        if (!popWait.await(getTimeout(timeLimit), TimeUnit.NANOSECONDS)) {
+                            throw new InterruptedException("Timeout");
+                        }
+                    } else {
                         popWait.await();
-                    } catch (InterruptedException ex) {
-                        return;
                     }
                 }
             }
@@ -43,24 +68,38 @@ public class SafeQueue<T> {
         }
     }
 
-    public void offer(List<T> e, long timeout) {
-        Future future = executor.submit(() -> offer(e));
+    public void offer(List<T> e) {
         try {
-            future.get(timeout, TimeUnit.MILLISECONDS);
-        } catch (Exception ex) {
-            return;
-        } finally {
-            future.cancel(true);
+            offer(e, 0, false);
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
         }
     }
 
-    List<T> take(int n) {
-        stateChanged.lock();
+    public void offer(List<T> e, long timeout) throws InterruptedException {
+        offer(e, timeout, true);
+    }
+
+    List<T> take(int n, long timeout, boolean needTimeout) throws InterruptedException {
+        long timeLimit = System.currentTimeMillis() + timeout;
+        if (needTimeout) {
+            if (!stateChanged.tryLock(getTimeout(timeLimit), TimeUnit.MILLISECONDS)) {
+                throw new InterruptedException("Timeout");
+            }
+        } else {
+            stateChanged.lock();
+        }
         try {
             List ans = new ArrayList<>();
             while (ans.size() < n) {
                 try {
-                    queueLock.lock();
+                    if (needTimeout) {
+                        if (!queueLock.tryLock(getTimeout(timeLimit), TimeUnit.MILLISECONDS)) {
+                            throw new InterruptedException("Timeout");
+                        }
+                    } else {
+                        queueLock.lock();
+                    }
                     if (queue.size() >= n) {
                         for (int i = 0; i < n; i++) {
                             ans.add(queue.poll());
@@ -73,10 +112,12 @@ public class SafeQueue<T> {
                     }
                 }
                 if (ans.size() < n) {
-                    try {
+                    if (needTimeout) {
+                        if (!pushWait.await(getTimeout(timeLimit), TimeUnit.NANOSECONDS)) {
+                            throw new InterruptedException("Timeout");
+                        }
+                    } else {
                         pushWait.await();
-                    } catch (InterruptedException ex) {
-                        return null;
                     }
                 }
             }
@@ -87,19 +128,23 @@ public class SafeQueue<T> {
         }
     }
 
-    public List<T> take(int n, long timeout) {
-        Future<List<T>> future = executor.submit(() -> take(n));
+    public List<T> take(int n) {
         try {
-            return future.get(timeout, TimeUnit.MILLISECONDS);
-        } catch (Exception ex) {
+            return take(n, 0, false);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
             return null;
-        } finally {
-            future.cancel(true);
         }
     }
 
+    public List<T> take(int n, long timeout) throws InterruptedException {
+        return take(n, timeout, true);
+    }
+
+
+
     SafeQueue(int maxSize) {
         this.maxSize = maxSize;
-        queue = new ArrayDeque();
+        queue = new ArrayDeque<>();
     }
 }

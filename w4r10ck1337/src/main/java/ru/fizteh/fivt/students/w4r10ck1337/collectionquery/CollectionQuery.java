@@ -1,7 +1,7 @@
 package ru.fizteh.fivt.students.w4r10ck1337.collectionquery;
 
 import ru.fizteh.fivt.students.w4r10ck1337.collectionquery.impl.Tuple;
-import ru.fizteh.fivt.students.w4r10ck1337.collectionquery.impl.exceptions.CreateResultObjectException;
+import ru.fizteh.fivt.students.w4r10ck1337.collectionquery.impl.exceptions.InvalidQueryException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,7 +27,7 @@ public class CollectionQuery {
      *
      * @param args
      */
-    public static void main(String[] args) throws CreateResultObjectException {
+    public static void main(String[] args) throws InvalidQueryException {
         Iterable<Statistics> statistics =
                 from(list(
                         student("ivanov", LocalDate.parse("1986-08-06"), "494"),
@@ -45,6 +45,16 @@ public class CollectionQuery {
                         .selectDistinct(Statistics.class, s -> "all", count(s -> 1), avg(Student::age))
                         .execute();
         System.out.println(statistics);
+
+        Iterable<String> names =
+                from(list(
+                        student("ivanov", LocalDate.parse("1986-08-06"), "494"),
+                        student("sidorov", LocalDate.parse("1986-08-06"), "495"),
+                        student("smith", LocalDate.parse("1986-08-06"), "495"),
+                        student("petrov", LocalDate.parse("2006-08-06"), "494")))
+                        .select(Student::getName)
+                        .execute();
+        System.out.println(names);
 
         Iterable<Tuple<String, String>> mentorsByStudent =
                 from(list(student("ivanov", LocalDate.parse("1985-08-06"), "494")))

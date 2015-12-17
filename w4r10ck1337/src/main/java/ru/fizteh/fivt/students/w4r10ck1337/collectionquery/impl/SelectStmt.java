@@ -1,8 +1,7 @@
 package ru.fizteh.fivt.students.w4r10ck1337.collectionquery.impl;
 
-import ru.fizteh.fivt.students.w4r10ck1337.collectionquery.Aggregates;
-import ru.fizteh.fivt.students.w4r10ck1337.collectionquery.impl.exceptions.CreateResultObjectException;
-
+import ru.fizteh.fivt.students.w4r10ck1337.collectionquery.impl.exceptions.InvalidQueryException;
+import ru.fizteh.fivt.students.w4r10ck1337.collectionquery.Aggregates.Aggregator;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -13,10 +12,11 @@ import java.util.stream.Stream;
  */
 public class SelectStmt<T, R> implements Query<R> {
     private Class resultClass;
-    private Function[] resultFunctions;
+    private Function<T, ?>[] resultFunctions;
     private List<T> objects;
     private List<List<T>> groups = new ArrayList<>();
-    private List<R> prevResult, result = new ArrayList<>();
+    private List<Object> prevResult;
+    private List<R> result = new ArrayList<>();
     private Predicate<T> wherePredicate;
     private Function<T, ?>[] groupByFunctions;
     private Predicate<R>  havingPredicate;
@@ -25,7 +25,7 @@ public class SelectStmt<T, R> implements Query<R> {
     private int limit = -1;
 
     @SafeVarargs
-    public SelectStmt(List<R> prevResult, List<T> objects,
+    public SelectStmt(List<Object> prevResult, List<T> objects,
                       boolean isDistinct, Class<R> resultClass, Function<T, ?>... s) {
         this.prevResult = prevResult;
         this.objects = objects;
@@ -61,7 +61,7 @@ public class SelectStmt<T, R> implements Query<R> {
         return this;
     }
 
-    public UnionStmt union() throws CreateResultObjectException {
+    public UnionStmt union() throws InvalidQueryException {
         return new UnionStmt(this.execute());
     }
 
@@ -98,23 +98,33 @@ public class SelectStmt<T, R> implements Query<R> {
         }
     }
 
-    private void createNewObjects() throws CreateResultObjectException {
+    @SuppressWarnings("unchecked")
+    private R createResultObject(Class[] classes, Object[] args) throws InvalidQueryException {
+        if (resultClass != null) {
+            try {
+                return (R) resultClass.getConstructor(classes).newInstance(args);
+            } catch (Exception e) {
+                throw new InvalidQueryException("Can't create result object");
+            }
+        } else {
+            return (R) new Tuple<>(args[0], args[1]);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void createNewObjects() throws InvalidQueryException {
         for (List<T> group : groups) {
             Object[] args = new Object[resultFunctions.length];
             Class[] classes = new Class[resultFunctions.length];
             for (int i = 0; i < resultFunctions.length; i++) {
-                if (resultFunctions[i] instanceof Aggregates.Aggregator) {
-                    args[i] = resultFunctions[i].apply(group);
+                if (resultFunctions[i] instanceof Aggregator) {
+                    args[i] = ((Aggregator) resultFunctions[i]).apply(group);
                 } else {
                     args[i] = resultFunctions[i].apply(group.get(0));
                 }
                 classes[i] = args[i].getClass();
             }
-            try {
-                result.add((R) resultClass.getConstructor(classes).newInstance(args));
-            } catch (Exception e) {
-                throw new CreateResultObjectException();
-            }
+            result.add(createResultObject(classes, args));
         }
     }
 
@@ -169,15 +179,16 @@ public class SelectStmt<T, R> implements Query<R> {
         }
     }
 
-    private void applyUnion() {
+    @SuppressWarnings("unchecked")
+    private void applyUnion() throws InvalidQueryException {
         if (prevResult != null) {
             prevResult.addAll(result);
-            result = prevResult;
+            result = (List<R>) prevResult;
         }
     }
 
     @Override
-    public Iterable<R> execute() throws CreateResultObjectException {
+    public Iterable<R> execute() throws InvalidQueryException {
         applyWhere();
         applyGroupBy();
         createNewObjects();
@@ -190,7 +201,8 @@ public class SelectStmt<T, R> implements Query<R> {
     }
 
     @Override
-    public Stream<R> stream() {
-        throw new UnsupportedOperationException();
+    public Stream<R> stream() throws InvalidQueryException {
+        execute();
+        return result.stream();
     }
 }

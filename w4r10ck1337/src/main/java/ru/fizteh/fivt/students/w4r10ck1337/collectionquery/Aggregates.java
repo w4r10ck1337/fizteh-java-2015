@@ -10,6 +10,15 @@ import java.util.function.Function;
  */
 public class Aggregates {
 
+    public abstract static class Aggregator<C, T> implements Function<C, T> {
+        public abstract T apply(Collection<C> collection);
+
+        @Override
+        public T apply(C c) {
+            return null;
+        }
+    }
+
     /**
      * Maximum value for expression for elements of given collecdtion.
      *
@@ -18,19 +27,10 @@ public class Aggregates {
      * @param <T>
      * @return
      */
-    public abstract static class Aggregator<C, T> implements Function<C, T> {
-        public abstract T applyToCollection(Collection<C> collection);
-
-        @Override
-        public T apply(C c) {
-            return applyToCollection((Collection<C>) c);
-        }
-    }
-
     public static <C, T extends Comparable<T>> Function<C, T> max(Function<C, T> expression) {
         return new Aggregator<C, T>() {
             @Override
-            public T applyToCollection(Collection<C> collection) {
+            public T apply(Collection<C> collection) {
                 T max = null;
                 for (C element : collection) {
                     T curr = expression.apply(element);
@@ -57,7 +57,7 @@ public class Aggregates {
     public static <C, T extends Comparable<T>> Function<C, T> min(Function<C, T> expression) {
         return new Aggregator<C, T>() {
             @Override
-            public T applyToCollection(Collection<C> collection) {
+            public T apply(Collection<C> collection) {
                 T min = null;
                 for (C element : collection) {
                     T curr = expression.apply(element);
@@ -84,7 +84,7 @@ public class Aggregates {
     public static <C, T> Function<C, Long> count(Function<C, T> expression) {
         return new Aggregator<C, Long>() {
             @Override
-            public Long applyToCollection(Collection<C> collection) {
+            public Long apply(Collection<C> collection) {
                 long count = 0;
                 for (C element : collection) {
                     if (expression.apply(element) != null) {
@@ -107,7 +107,7 @@ public class Aggregates {
     public static <C, T extends Number> Function<C, Double> avg(Function<C, T> expression) {
         return new Aggregator<C, Double>() {
             @Override
-            public Double applyToCollection(Collection<C> collection) {
+            public Double apply(Collection<C> collection) {
                 Double sum = 0.0;
                 for (C element : collection) {
                     sum += expression.apply(element).doubleValue();

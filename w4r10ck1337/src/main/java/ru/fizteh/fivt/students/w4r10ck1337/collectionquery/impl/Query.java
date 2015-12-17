@@ -1,5 +1,7 @@
 package ru.fizteh.fivt.students.w4r10ck1337.collectionquery.impl;
 
+import ru.fizteh.fivt.students.w4r10ck1337.collectionquery.impl.exceptions.InvalidQueryException;
+
 import java.util.stream.Stream;
 
 /**
@@ -7,7 +9,7 @@ import java.util.stream.Stream;
  */
 public interface Query<R> {
 
-    Iterable<R> execute() throws Exception;
+    Iterable<R> execute() throws InvalidQueryException;
 
-    Stream<R> stream();
+    Stream<R> stream() throws InvalidQueryException;
 }

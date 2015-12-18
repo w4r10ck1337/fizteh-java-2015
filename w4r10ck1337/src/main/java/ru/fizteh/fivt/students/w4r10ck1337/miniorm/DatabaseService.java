@@ -93,9 +93,9 @@ public class DatabaseService<K, T> {
     }
 
     private String prepareColumnNames(String pattern) {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for (String name : columnNames) {
-            result += name + pattern;
+            result.append(name).append(pattern);
         }
         return result.substring(0, result.length() - 1);
     }
@@ -215,16 +215,15 @@ public class DatabaseService<K, T> {
 
     public void createTable() throws DatabaseException {
         try {
-            String query = "CREATE TABLE IF NOT EXISTS " + tableName + "(";
+            StringBuilder query = new StringBuilder("CREATE TABLE IF NOT EXISTS " + tableName + "(");
             for (int i = 0; i < columns.size(); i++) {
                 String type = getClassName(columns.get(i).getType());
                 if (i == primaryKeyFieldNumber) {
                     type += " PRIMARY KEY NOT NULL";
                 }
-                query += columnNames.get(i) + " " + type + ",";
+                query.append(columnNames.get(i)).append(" ").append(type).append(",");
             }
-            query = query.substring(0, query.length() - 1) + ")";
-            connection.createStatement().execute(query);
+            connection.createStatement().execute(query.substring(0, query.length() - 1) + ")");
         } catch (Exception e) {
             throw new DatabaseException("Create table fail");
         }

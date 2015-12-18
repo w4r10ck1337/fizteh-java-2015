@@ -1,7 +1,7 @@
 package ru.fizteh.fivt.students.w4r10ck1337.miniorm;
 
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -12,8 +12,9 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(PowerMockRunner.class)
 public class DatabaseTest {
-    @Ignore
+
     @Test
+    @Ignore
     public void testQuery () throws DatabaseException, ClassNotFoundException {
         DatabaseService<Integer, TestClass> db = new DatabaseService<>(TestClass.class);
         ArrayList<TestClass> testArray = new ArrayList<>();

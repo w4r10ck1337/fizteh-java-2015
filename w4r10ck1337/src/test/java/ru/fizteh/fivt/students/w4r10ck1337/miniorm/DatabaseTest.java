@@ -15,7 +15,7 @@ public class DatabaseTest {
 
     @Test
     @Ignore
-    public void testQuery () throws DatabaseException, ClassNotFoundException {
+    public void testQuery() throws DatabaseException, ClassNotFoundException {
         DatabaseService<Integer, TestClass> db = new DatabaseService<>(TestClass.class);
         ArrayList<TestClass> testArray = new ArrayList<>();
         testArray.add(new TestClass(1, "asd1", 1.1));
@@ -56,5 +56,14 @@ public class DatabaseTest {
         db.dropTable();
         db.createTable();
         assertTrue(db.queryForAll().size() == 0);
+    }
+
+    @Test(expected = DatabaseException.class)
+    @Ignore
+    public void testDBException() throws DatabaseException {
+        DatabaseService<Integer, TestClass> db = new DatabaseService<>(TestClass.class);
+
+        db.dropTable();
+        db.queryForAll();
     }
 }

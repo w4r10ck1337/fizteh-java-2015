@@ -1,7 +1,5 @@
 package ru.fizteh.fivt.students.w4r10ck1337.miniorm;
 
-
-import com.google.common.collect.Lists;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -14,7 +12,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(PowerMockRunner.class)
 public class DatabaseTest {
     @Test
-    public void testQuery () {
+    public void testQuery () throws DatabaseException, ClassNotFoundException {
         DatabaseService<Integer, TestClass> db = new DatabaseService<>(TestClass.class);
         ArrayList<TestClass> testArray = new ArrayList<>();
         testArray.add(new TestClass(1, "asd1", 1.1));
@@ -24,8 +22,11 @@ public class DatabaseTest {
 
         List<TestClass> response;
 
+        db.dropTable();
         db.createTable();
-        testArray.forEach(db::insert);
+        for (TestClass t : testArray) {
+            db.insert(t);
+        }
         response = db.queryForAll();
 
         for (int i = 0; i < 4; i++) {
@@ -34,6 +35,7 @@ public class DatabaseTest {
 
         testArray.get(1).value1 = "bcd";
         db.update(testArray.get(1));
+        response = db.queryForAll();
 
         for (int i = 0; i < 4; i++) {
             assertTrue(testArray.get(i).equals(response.get(i)));
@@ -49,6 +51,7 @@ public class DatabaseTest {
         }
 
         db.dropTable();
+        db.createTable();
         assertTrue(db.queryForAll().size() == 0);
     }
 }
